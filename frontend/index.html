@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Numerical Report Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #16213e;
+    }
+
+    header p {
+      color: #555;
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 560px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: #16213e;
+      border-left: 4px solid #4f8ef7;
+      padding-left: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+    }
+
+    input[type="number"] {
+      padding: 10px 14px;
+      border: 1.5px solid #d0d7e3;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+      width: 100%;
+    }
+
+    input[type="number"]:focus {
+      border-color: #4f8ef7;
+    }
+
+    button {
+      padding: 10px 22px;
+      background: #4f8ef7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    button:hover  { background: #3a78e8; }
+    button:active { transform: scale(0.97); }
+
+    .error-msg {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fff0f0;
+      border: 1.5px solid #f5c2c7;
+      border-radius: 8px;
+      color: #b00020;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .stat-box {
+      background: #f7f9fc;
+      border-radius: 10px;
+      padding: 16px 18px;
+      text-align: center;
+    }
+
+    .stat-box .value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-box .label {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-box.total  .value { color: #16213e; }
+    .stat-box.fizz   .value { color: #4f8ef7; }
+    .stat-box.buzz   .value { color: #f7934f; }
+    .stat-box.whizz  .value { color: #7c4ff7; }
+
+    /* Sequence display */
+    .sequence-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+
+    .token {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .token.plain { background: #eef0f4; color: #444; }
+    .token.fizz  { background: #dbeafe; color: #1d4ed8; }
+    .token.buzz  { background: #fed7aa; color: #c2410c; }
+    .token.whizz { background: #ede9fe; color: #6d28d9; }
+    .token.combo { background: #d1fae5; color: #065f46; }
+
+    .placeholder {
+      color: #aaa;
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .results-section { display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📊 Numerical Report Generator</h1>
+    <p>Marketing Analytics Tool — FizzBuzzWhizz Engine</p>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+    <h2>Generate Report</h2>
+    <div class="input-row">
+      <div class="input-group">
+        <label for="limitInput">Enter a number (1 – 100)</label>
+        <input type="number" id="limitInput" min="1" max="100" placeholder="e.g. 20" />
+      </div>
+      <button onclick="generateReport()">Generate Report</button>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Summary stats card -->
+  <div class="card results-section" id="statsCard">
+    <h2>Summary</h2>
+    <div class="stats-grid">
+      <div class="stat-box total">
+        <div class="value" id="statTotal">—</div>
+        <div class="label">Items Processed</div>
+      </div>
+      <div class="stat-box fizz">
+        <div class="value" id="statFizz">—</div>
+        <div class="label">Fizz (incl. combos)</div>
+      </div>
+      <div class="stat-box buzz">
+        <div class="value" id="statBuzz">—</div>
+        <div class="label">Buzz (incl. combos)</div>
+      </div>
+      <div class="stat-box whizz">
+        <div class="value" id="statWhizz">—</div>
+        <div class="label">Whizz (incl. combos)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sequence card -->
+  <div class="card results-section" id="seqCard">
+    <h2>Sequence</h2>
+    <div class="sequence-wrap" id="sequenceWrap">
+      <span class="placeholder">Results will appear here…</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Core rules engine — mirrors the Java backend logic.
+     * Multiples of 3 → Fizz | 5 → Buzz | 7 → Whizz | combinations combined.
+     */
+    function translate(n) {
+      let word = '';
+      if (n % 3 === 0) word += 'Fizz';
+      if (n % 5 === 0) word += 'Buzz';
+      if (n % 7 === 0) word += 'Whizz';
+      return word || String(n);
+    }
+
+    function generateSequence(limit) {
+      const items = [];
+      for (let i = 1; i <= limit; i++) items.push(translate(i));
+      return items;
+    }
+
+    function summarize(items) {
+      let fizz = 0, buzz = 0, whizz = 0;
+      items.forEach(item => {
+        if (item.includes('Fizz'))  fizz++;
+        if (item.includes('Buzz'))  buzz++;
+        if (item.includes('Whizz')) whizz++;
+      });
+      return { total: items.length, fizz, buzz, whizz };
+    }
+
+    function tokenClass(word) {
+      const hasFizz  = word.includes('Fizz');
+      const hasBuzz  = word.includes('Buzz');
+      const hasWhizz = word.includes('Whizz');
+      const count    = [hasFizz, hasBuzz, hasWhizz].filter(Boolean).length;
+      if (count > 1)  return 'combo';
+      if (hasFizz)    return 'fizz';
+      if (hasBuzz)    return 'buzz';
+      if (hasWhizz)   return 'whizz';
+      return 'plain';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function clearError() {
+      document.getElementById('errorMsg').style.display = 'none';
+    }
+
+    function generateReport() {
+      clearError();
+
+      const raw   = document.getElementById('limitInput').value.trim();
+      const limit = parseInt(raw, 10);
+
+      // Validation — mirrors Java backend security check
+      if (raw === '' || isNaN(limit)) {
+        showError('Please enter a valid number.');
+        return;
+      }
+      if (limit <= 0) {
+        showError('Invalid input: number must be greater than zero.');
+        return;
+      }
+      if (limit > 100) {
+        showError('Invalid input: number must not exceed 100.');
+        return;
+      }
+
+      const items   = generateSequence(limit);
+      const summary = summarize(items);
+
+      // Update stats
+      document.getElementById('statTotal').textContent = summary.total;
+      document.getElementById('statFizz').textContent  = summary.fizz;
+      document.getElementById('statBuzz').textContent  = summary.buzz;
+      document.getElementById('statWhizz').textContent = summary.whizz;
+
+      // Render sequence tokens
+      const wrap = document.getElementById('sequenceWrap');
+      wrap.innerHTML = items.map(word =>
+        `<span class="token ${tokenClass(word)}">${word}</span>`
+      ).join('');
+
+      // Reveal result sections
+      document.getElementById('statsCard').style.display = 'block';
+      document.getElementById('seqCard').style.display   = 'block';
+      document.querySelectorAll('.results-section').forEach(el => el.style.display = 'block');
+    }
+
+    // Allow pressing Enter to submit
+    document.getElementById('limitInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') generateReport();
+    });
+  </script>
+
+</body>
+</html>
