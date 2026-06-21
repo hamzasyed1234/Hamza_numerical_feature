@@ -6,7 +6,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.marketing</groupId>
+    <groupId>numerical</groupId>
     <artifactId>numerical-engine</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -29,6 +29,11 @@
     </dependencies>
 
     <build>
+        <!-- Flat source structure: src/ and src/test/ -->
+        <sourceDirectory>src</sourceDirectory>
+        <testSourceDirectory>test</testSourceDirectory>
+
+
         <plugins>
             <!-- Surefire for JUnit 5 -->
             <plugin>
@@ -37,7 +42,7 @@
                 <version>3.1.2</version>
             </plugin>
 
-            <!-- Fat JAR so you can run with: java -jar numerical-engine-1.0.0.jar -->
+            <!-- Fat JAR: java -jar numerical-engine-1.0.0.jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -50,7 +55,7 @@
                             <transformers>
                                 <transformer implementation=
                                     "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.marketing.Main</mainClass>
+                                    <mainClass>Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
