@@ -231,102 +231,73 @@
   </div>
 
   <script>
-    /**
-     * Core rules engine — mirrors the Java backend logic.
-     * Multiples of 3 → Fizz | 5 → Buzz | 7 → Whizz | combinations combined.
-     */
-    function translate(n) {
-      let word = '';
-      if (n % 3 === 0) word += 'Fizz';
-      if (n % 5 === 0) word += 'Buzz';
-      if (n % 7 === 0) word += 'Whizz';
-      return word || String(n);
+  const API_BASE = 'http://localhost:8080';
+
+  function tokenClass(word) {
+    const hasFizz  = word.includes('Fizz');
+    const hasBuzz  = word.includes('Buzz');
+    const hasWhizz = word.includes('Whizz');
+    const count    = [hasFizz, hasBuzz, hasWhizz].filter(Boolean).length;
+    if (count > 1)  return 'combo';
+    if (hasFizz)    return 'fizz';
+    if (hasBuzz)    return 'buzz';
+    if (hasWhizz)   return 'whizz';
+    return 'plain';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function clearError() {
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  async function generateReport() {
+    clearError();
+
+    const raw   = document.getElementById('limitInput').value.trim();
+    const limit = parseInt(raw, 10);
+
+    if (raw === '' || isNaN(limit)) {
+      showError('Please enter a valid number.');
+      return;
     }
 
-    function generateSequence(limit) {
-      const items = [];
-      for (let i = 1; i <= limit; i++) items.push(translate(i));
-      return items;
+    let response;
+    try {
+      response = await fetch(`${API_BASE}/api/report?limit=${limit}`);
+    } catch (err) {
+      showError('Cannot reach the backend. Make sure the server is running: java -jar target/numerical-engine-1.0.0.jar --server');
+      return;
     }
 
-    function summarize(items) {
-      let fizz = 0, buzz = 0, whizz = 0;
-      items.forEach(item => {
-        if (item.includes('Fizz'))  fizz++;
-        if (item.includes('Buzz'))  buzz++;
-        if (item.includes('Whizz')) whizz++;
-      });
-      return { total: items.length, fizz, buzz, whizz };
+    const data = await response.json();
+
+    if (!response.ok) {
+      showError(data.error || 'Something went wrong.');
+      return;
     }
 
-    function tokenClass(word) {
-      const hasFizz  = word.includes('Fizz');
-      const hasBuzz  = word.includes('Buzz');
-      const hasWhizz = word.includes('Whizz');
-      const count    = [hasFizz, hasBuzz, hasWhizz].filter(Boolean).length;
-      if (count > 1)  return 'combo';
-      if (hasFizz)    return 'fizz';
-      if (hasBuzz)    return 'buzz';
-      if (hasWhizz)   return 'whizz';
-      return 'plain';
-    }
+    document.getElementById('statTotal').textContent = data.total;
+    document.getElementById('statFizz').textContent  = data.fizzCount;
+    document.getElementById('statBuzz').textContent  = data.buzzCount;
+    document.getElementById('statWhizz').textContent = data.whizzCount;
 
-    function showError(msg) {
-      const el = document.getElementById('errorMsg');
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
+    const wrap = document.getElementById('sequenceWrap');
+    wrap.innerHTML = data.sequence.map(word =>
+      `<span class="token ${tokenClass(word)}">${word}</span>`
+    ).join('');
 
-    function clearError() {
-      document.getElementById('errorMsg').style.display = 'none';
-    }
+    document.querySelectorAll('.results-section').forEach(el => el.style.display = 'block');
+  }
 
-    function generateReport() {
-      clearError();
-
-      const raw   = document.getElementById('limitInput').value.trim();
-      const limit = parseInt(raw, 10);
-
-      // Validation — mirrors Java backend security check
-      if (raw === '' || isNaN(limit)) {
-        showError('Please enter a valid number.');
-        return;
-      }
-      if (limit <= 0) {
-        showError('Invalid input: number must be greater than zero.');
-        return;
-      }
-      if (limit > 100) {
-        showError('Invalid input: number must not exceed 100.');
-        return;
-      }
-
-      const items   = generateSequence(limit);
-      const summary = summarize(items);
-
-      // Update stats
-      document.getElementById('statTotal').textContent = summary.total;
-      document.getElementById('statFizz').textContent  = summary.fizz;
-      document.getElementById('statBuzz').textContent  = summary.buzz;
-      document.getElementById('statWhizz').textContent = summary.whizz;
-
-      // Render sequence tokens
-      const wrap = document.getElementById('sequenceWrap');
-      wrap.innerHTML = items.map(word =>
-        `<span class="token ${tokenClass(word)}">${word}</span>`
-      ).join('');
-
-      // Reveal result sections
-      document.getElementById('statsCard').style.display = 'block';
-      document.getElementById('seqCard').style.display   = 'block';
-      document.querySelectorAll('.results-section').forEach(el => el.style.display = 'block');
-    }
-
-    // Allow pressing Enter to submit
-    document.getElementById('limitInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') generateReport();
-    });
-  </script>
+  document.getElementById('limitInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') generateReport();
+  });
+</script>
 
 </body>
 </html>

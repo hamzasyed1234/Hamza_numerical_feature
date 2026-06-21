@@ -1,78 +1,78 @@
-# Numerical Report Feature
+Hamza_numerical_feature/
 
-## Project Structure
+├── backend/
 
-```
-numerical_feature/
-├── backend/          ← Java Rules Engine (Maven project)
 │   ├── pom.xml
-│   └── src/
-│       ├── main/java/com/marketing/
-│       │   ├── NumericalEngine.java   ← Core rules engine
-│       │   ├── ReportSummary.java     ← Stats data class
-│       │   └── Main.java              ← CLI entry point
-│       └── test/java/com/marketing/
-│           └── NumericalEngineTest.java ← JUnit 5 tests
+
+│   ├── src/
+
+│   │   ├── Main.java            ← Entry point (CLI mode or --server mode)
+
+│   │   ├── NumericalEngine.java ← Core rules engine + report logic
+
+│   │   └── Server.java          ← HTTP server exposing the engine as an API
+
+│   └── test/
+
+│       └── NumericalEngineTest.java
+
 └── frontend/
-    └── index.html    ← Self-contained HTML/CSS/JS dashboard
-```
+
+└── index.html               ← Dashboard that calls the Java backend
+
+The frontend doesn't reimplement the rules — it calls the Java backend over HTTP
+and renders whatever it returns. **The backend must be running before the
+frontend can generate a report.**
 
 ---
 
-## Backend — Java Rules Engine
+## Backend (Java)
 
-### Prerequisites
-- Java 11 or higher
-- Apache Maven 3.6+
-
-### Compile & Run Tests
+**Prerequisites:** Java 11+, Maven 3.6+
 
 ```bash
 cd backend
+mvn test       # run automated tests
+mvn package    # build target/numerical-engine-1.0.0.jar
+```
 
-# Run all automated tests
-mvn test
+**Run as the API server** (needed for the frontend):
+```bash
+java -jar target/numerical-engine-1.0.0.jar --server
+```
+Outputs `Server running at http://localhost:8080/api/report?limit=20`. Custom port: add a number after `--server`.
 
-# Build the fat JAR
-mvn package -DskipTests
-
-# Run the CLI (optional — pass any number 1-100)
+**Or run as a plain CLI** (prints straight to console, no server):
+```bash
 java -jar target/numerical-engine-1.0.0.jar 20
 ```
 
-### Rules
-| Condition                    | Output         |
-|------------------------------|----------------|
-| Multiple of 3                | Fizz           |
-| Multiple of 5                | Buzz           |
-| Multiple of 7                | Whizz          |
-| Multiple of 3 **and** 5      | FizzBuzz       |
-| Multiple of 3 **and** 7      | FizzWhizz      |
-| Multiple of 5 **and** 7      | BuzzWhizz      |
-| Multiple of 3, 5 **and** 7   | FizzBuzzWhizz  |
-| None of the above            | The number itself |
+### API
 
-### Validation
-- Input ≤ 0 → throws `IllegalArgumentException` with clear message
-- Input > 100 → throws `IllegalArgumentException`
+`GET /api/report?limit=N`
+
+```json
+{ "total": 20, "fizzCount": 6, "buzzCount": 4, "whizzCount": 2, "sequence": ["1","2","Fizz", "..."] }
+```
+Errors (limit ≤ 0 or > 100) return `400` with `{ "error": "..." }`.
+
+### Rules
+
+| Condition          | Output    |
+|---------------------|-----------|
+| Multiple of 3       | Fizz      |
+| Multiple of 5       | Buzz      |
+| Multiple of 7       | Whizz     |
+| 3 and 5             | FizzBuzz  |
+| 3 and 7             | FizzWhizz |
+| 5 and 7             | BuzzWhizz |
+| None                | The number itself |
 
 ---
 
-## Frontend — HTML Dashboard
+## Frontend
 
-### How to Open
+1. Start the backend server first (see above).
+2. Open `frontend/index.html` directly in any browser — no build step.
 
-No build step or server required.
-
-1. Navigate to the `frontend/` folder.
-2. Open `index.html` in any modern web browser (Chrome, Firefox, Edge, Safari).
-
-### Features
-- Enter a number (1–100) and click **Generate Report** (or press Enter).
-- The dashboard displays:
-  - Total items processed
-  - Count of **Fizz** occurrences (including FizzBuzz, FizzWhizz, FizzBuzzWhizz)
-  - Count of **Buzz** occurrences
-  - Count of **Whizz** occurrences
-- Colour-coded token sequence for quick visual inspection.
-- Client-side validation mirrors the backend security rules.
+If you see "Cannot reach the backend," the Java server isn't running on port 8080.
